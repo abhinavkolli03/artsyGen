@@ -3,8 +3,8 @@ import { ActivityIndicator, Text, TouchableOpacity, StyleProp, ViewStyle, TextSt
 interface CustomButtonProps {
     title: string,
     handlePress: () => void,
-    containerStyles: string,
-    textStyles: StyleProp<TextStyle>,
+    containerStyles?: string,
+    textStyles?: StyleProp<TextStyle>,
     isLoading: boolean,
 }
 

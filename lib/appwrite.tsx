@@ -4,8 +4,11 @@ import {
     Client,
     Databases,
     ID,
+    ImageGravity,
     Query,
     Storage,
+    Permission,
+    Role
 } from "react-native-appwrite";
 
 export const appwriteConfig = {
@@ -31,7 +34,7 @@ const avatars = new Avatars(client);
 const databases = new Databases(client);
 
 //registering a user
-export async function createUser(email, password, username) {
+export async function createUser(email: string, password: string, username: string) {
     try {
         const newAccount = await account.create(
             ID.unique(),
@@ -55,7 +58,8 @@ export async function createUser(email, password, username) {
                 email: email,
                 username: username,
                 avatar: avatarUrl,
-            }
+            },
+            [Permission.write(Role.user(newAccount.$id))],
         );
         return newUser;
     } catch (error) {
@@ -64,7 +68,7 @@ export async function createUser(email, password, username) {
 }
 
 //signing a new user in
-export async function signIn(email, password) {
+export async function signIn(email: string, password: string) {
     try {
         const session = await account.createEmailPasswordSession(email, password);
         return session;
@@ -114,12 +118,33 @@ export async function signOut() {
     }
 }
 
-//uploading a new file
-export async function uploadFile(file, type) {
-    if (!file) return;
+interface FileUpload {
+    mimeType: string,
+    name: string;
+    size: number;
+    uri: string;
+    [key: string]: any;
+}
 
-    const { mimeType, ...rest } = file;
-    const asset = { type: mimeType, ...rest };
+function convertToFileUpload(file: File): FileUpload {
+    return {
+        mimeType: file.type,
+        name: file.name || 'default_name',
+        size: file.size || 0,
+        uri: file.name || 'default_url',
+    };
+}
+
+//uploading a new file
+export async function uploadFile(fileUpload: FileUpload | null, type: string) {
+    if (!fileUpload) return;
+
+    const asset = {
+        name: fileUpload.name,
+        type: fileUpload.mimeType,
+        size: fileUpload.size,
+        uri: fileUpload.uri
+    };
 
     try {
         const uploadedFile = await storage.createFile(
@@ -136,7 +161,7 @@ export async function uploadFile(file, type) {
 }
 
 //retrieving file preview
-export async function getFilePreview(fileId, type) {
+export async function getFilePreview(fileId: string, type: string) {
     let fileUrl;
     
     try {
@@ -148,8 +173,8 @@ export async function getFilePreview(fileId, type) {
                 appwriteConfig.storageId,
                 fileId,
                 2000,
-                20000,
-                "top",
+                20000,  
+                "top" as ImageGravity,
                 100
             )
         }
@@ -164,12 +189,81 @@ export async function getFilePreview(fileId, type) {
     }
 }
 
-//do the video posting stuff from here on out
+interface VideoPostForm {
+    thumbnail: File;
+    video: File;
+    title: string;
+    prompt: string;
+    userId: string;
+}
 
-// Register User
-account.create(ID.unique(), 'me@example.com', 'password', 'Jane Doe')
-    .then(function (response) {
-        console.log(response);
-    }, function (error) {
-        console.log(error);
-    });
+//creating video post
+export async function createVideoPost(form: VideoPostForm) {
+    try {
+        const [thumbnailUrl, videoUrl] = await Promise.all([
+            uploadFile(convertToFileUpload(form.thumbnail), "image"),
+            uploadFile(convertToFileUpload(form.video), "video"),
+        ])
+
+        const newPost = await databases.createDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.videoCollectionId,
+            ID.unique(),
+            {
+                title: form.title,
+                thumbnail: thumbnailUrl,
+                video: videoUrl,
+                prompt: form.prompt, 
+                creator: form.userId,
+            }
+        );
+        return newPost;
+    } catch (error) {
+        throw new Error(error as string);
+    }
+}
+
+//get all video posts
+export async function getAllPosts() {
+    try {
+        const posts = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            appwriteConfig.videoCollectionId
+        )
+
+        return posts.documents;
+    } catch (error) {
+        throw new Error(error as string);
+    }
+}
+
+//get video posts that match search query
+export async function searchPosts(query: string) {
+    try {
+        const posts = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            appwriteConfig.videoCollectionId,
+            [Query.search("title", query)]
+        );
+
+        if (!posts) throw new Error("something went wrong...");
+
+        return posts.documents;
+    } catch (error) {
+        throw new Error(error as string);
+    }
+}
+
+//get latest created video posts
+export async function getLatestPosts() {
+    try {
+        const posts = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            appwriteConfig.videoCollectionId,
+            [Query.orderDesc("$createdAt"), Query.limit(10)]
+        )
+        return posts.documents;
+    } catch (error) {
+        throw new Error(error as string);
+    }
+}

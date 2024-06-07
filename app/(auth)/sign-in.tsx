@@ -2,6 +2,7 @@ import { Text, View, ScrollView, Dimensions, Alert, Image } from 'react-native';
 import React, {useState} from 'react';
 import {Link, router} from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getCurrentUser, signIn } from '../../lib/appwrite';
 
 import FormField from '@/components/FormField';
 import images from '../../constants/images';
@@ -15,10 +16,25 @@ const SignIn = () => {
     })
 
     const submit = async () => {
-        if (form.email === "" || form.password === "") {
-            Alert.alert("Error", "Please fill in all fields");
+        if (!form.password || !form.email) {
+            Alert.alert('Error', "Please fill in all the fields")
         }
+
         setSubmitting(true);
+
+        try {  
+            await signIn(form.email, form.password);
+            const result = await getCurrentUser();
+            if (result) {
+                router.replace('/home');
+            } else {
+                throw new Error("Signup failed.");
+            }
+        } catch (error) {
+            Alert.alert("Error", (error as Error).message);
+        } finally {
+            setSubmitting(false);
+        }
     }
 
     return (

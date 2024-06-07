@@ -32,7 +32,7 @@ const SignUp = () => {
                 throw new Error("Signup failed.");
             }
         } catch (error) {
-            Alert.alert("Error", (error).message);
+            Alert.alert("Error", (error as Error).message);
         } finally {
             setSubmitting(false);
         }

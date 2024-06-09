@@ -8,8 +8,10 @@ import images from '../../constants/images';
 import CustomButton from '../../components/CustomButton';
 
 import { createUser, getAccount } from '../../lib/appwrite';
+import { useGlobalContext } from '@/context/GlobalProvider';
 
 const SignUp = () => {
+    const {setUser, setIsLoggedIn} = useGlobalContext();
     const [isSubmitting, setSubmitting] = useState(false);
     const [form, setForm] = useState({
         username: '',
@@ -27,6 +29,8 @@ const SignUp = () => {
         try {  
             const result = await createUser(form.email, form.password, form.username);
             if (result) {
+                setUser(result);
+                setIsLoggedIn(true);
                 router.replace('/home');
             } else {
                 throw new Error("Signup failed.");

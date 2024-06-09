@@ -268,3 +268,21 @@ export async function getLatestPosts() {
         throw new Error(error as string);
     }
 }
+
+//get user video posts
+export async function getUserPosts(userId: string) {
+    try {
+        const posts = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            appwriteConfig.videoCollectionId,
+            [Query.equal("creator", userId)]
+        );
+
+        if (!posts) throw new Error("something went wrong...");
+
+        return posts.documents;
+    } catch (error) {
+        throw new Error(error as string);
+    }
+}
+// 666632d90032b9d35744

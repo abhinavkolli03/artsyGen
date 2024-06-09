@@ -1,11 +1,12 @@
-import { StyleSheet, Text, View, FlatList, Image, RefreshControl } from 'react-native'
+import { StyleSheet, Text, View, FlatList, Image, RefreshControl, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { images } from '../../constants'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 import SearchInput from '@/components/SearchInput'
 import Trending from '@/components/Trending'
 import EmptyState from '@/components/EmptyState'
+import { getAllPosts } from '@/lib/appwrite'
 
 const Home = () => {
   const [refreshing, setRefreshing] = useState(false)

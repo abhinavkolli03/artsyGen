@@ -6,24 +6,37 @@ import React, { useState, useEffect } from 'react'
 import SearchInput from '@/components/SearchInput'
 import Trending from '@/components/Trending'
 import EmptyState from '@/components/EmptyState'
-import { getAllPosts } from '@/lib/appwrite'
+import VideoCard from '@/components/VideoCard'
+import { getAllPosts, getLatestPosts } from '@/lib/appwrite'
+import useAppwrite from '@/lib/useAppwrite'
 
 const Home = () => {
+  const  { data: posts, refetch } = useAppwrite(getAllPosts);
+  const { data: latestPosts } = useAppwrite(getLatestPosts);
+
   const [refreshing, setRefreshing] = useState(false)
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // re call videos -> if ay videos appeared
+    await refetch();
     setRefreshing(false);
   }
+
+  console.log(posts)
 
   return (
     <SafeAreaView className="bg-primary h-full">
       <FlatList 
-        data={[{id: 1}, {id: 2}, {id: 3}]}
+        data={posts}
         keyExtractor={(item) => item.$id}
         renderItem={({ item }) => (
-          <Text className="text-3xl text-white">{item.id}</Text>
+          <VideoCard 
+            title={item.title}
+            thumbnail={item.thumbnail}
+            video={item.video}
+            creator={item.creator.username}
+            avatar={item.creator.avatar}
+          />
         )}
         ListHeaderComponent={() => (
           <View className="flex my-6 px-4 space-y-6">
@@ -51,10 +64,10 @@ const Home = () => {
 
             <View className="w-full flex-1 pt-5 pb-8">
               <Text className="text-lg font-pregular text-gray-100 mb-3">
-                Trending Videos
+                Latest Videos
               </Text>
 
-              <Trending posts={[{ id: 1}, { id: 2}, { id: 3}] ?? []}/>
+              <Trending posts={latestPosts ?? []}/>
             </View>
           </View>
         )}
